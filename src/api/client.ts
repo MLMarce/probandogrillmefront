@@ -1,6 +1,6 @@
 import type { paths } from "./schema";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export type HealthStatus =
   paths["/health"]["get"]["responses"]["200"]["content"]["application/json"];

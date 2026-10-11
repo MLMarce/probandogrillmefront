@@ -19,7 +19,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        HealthStatus: Record<string, never>;
+        HealthStatus: {
+            /**
+             * @description Estado general del servicio
+             * @example ok
+             */
+            status: string;
+        };
     };
     responses: never;
     parameters: never;
