@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import LoginPage from "./page";
-import { getSession } from "@/lib/session";
+import { clearSession, getSession } from "@/lib/session";
 import { server } from "../../../test/mocks/server";
 import { API_URL } from "@/api/client";
 
@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 describe("LoginPage", () => {
   beforeEach(() => {
     push.mockClear();
-    document.cookie = "rrhh_token=; path=/; max-age=0";
+    clearSession();
   });
 
   it("muestra el formulario de email y contraseña", () => {

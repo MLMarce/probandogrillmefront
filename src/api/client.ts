@@ -42,8 +42,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
 }
 
 export async function logout(): Promise<void> {
-  await apiFetch("/auth/logout", { method: "POST" }, true);
-  clearSession();
+  try {
+    await apiFetch("/auth/logout", { method: "POST" }, true);
+  } finally {
+    clearSession();
+  }
 }
 
 export async function getSessionUser(): Promise<SessionUser> {

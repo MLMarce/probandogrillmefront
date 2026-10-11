@@ -21,8 +21,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push("/");
-    } catch {
-      setError("Credenciales inválidas");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error de autenticación");
     } finally {
       setBusy(false);
     }
@@ -34,8 +34,8 @@ export default function LoginPage() {
     try {
       await recoverPassword(email);
       setNotice("Si el email existe, se envió el link de recuperación.");
-    } catch {
-      setError("No se pudo enviar el email de recuperación");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo enviar el email de recuperación");
     }
   }
 
