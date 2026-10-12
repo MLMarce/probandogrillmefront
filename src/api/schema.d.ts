@@ -212,11 +212,6 @@ export interface components {
             areaId?: string;
             /** @description Id de un Empleado activo */
             supervisorId?: string;
-            /**
-             * @default activo
-             * @enum {string}
-             */
-            estado: "activo" | "inactivo" | "licencia";
         };
     };
     responses: never;
@@ -445,8 +440,9 @@ export interface operations {
     EmpleadosController_create: {
         parameters: {
             query?: never;
-            header: {
-                authorization: string;
+            header?: {
+                /** @description Bearer <token> del admin */
+                authorization?: string;
             };
             path?: never;
             cookie?: never;

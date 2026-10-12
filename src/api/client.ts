@@ -140,19 +140,8 @@ export async function listEmpleados(query: EmpleadosQuery = {}): Promise<Paginat
   return (await res.json()) as PaginatedEmpleados;
 }
 
-export interface CreateEmpleadoPayload {
-  legajo?: string;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  fechaNacimiento?: string;
-  email?: string;
-  telefono?: string;
-  direccion?: string;
-  puesto?: string;
-  fechaIngreso?: string;
-  areaId?: string;
-}
+export type CreateEmpleadoPayload =
+  paths["/empleados"]["post"]["requestBody"]["content"]["application/json"];
 
 export async function createEmpleado(payload: CreateEmpleadoPayload): Promise<EmpleadoListItem> {
   const clean: CreateEmpleadoPayload = { ...payload };

@@ -2,8 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NuevoEmpleadoPage from "./page";
+import EmpleadosPage from "../page";
 import { setSession } from "@/lib/session";
-import { listEmpleados } from "@/api/client";
+import { createEmpleado, listEmpleados } from "@/api/client";
 import { makeToken } from "../../../../test/mocks/handlers";
 
 const push = vi.fn();
@@ -43,6 +44,16 @@ describe("NuevoEmpleadoPage", () => {
       estado: "activo",
       legajo: "L-0013",
     });
+  });
+
+  it("muestra en el listado el Empleado recién creado", async () => {
+    await createEmpleado({ nombre: "Nuevo", apellido: "Visible", dni: "11222333" });
+    const user = userEvent.setup();
+    render(<EmpleadosPage />);
+
+    await user.type(screen.getByPlaceholderText(/buscar por nombre/i), "visible");
+    await user.click(screen.getByRole("button", { name: /^buscar$/i }));
+    expect(await screen.findByText("Nuevo Visible")).toBeInTheDocument();
   });
 
   it("muestra el error de legajo duplicado y no navega", async () => {
