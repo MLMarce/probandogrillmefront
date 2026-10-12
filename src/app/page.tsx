@@ -26,6 +26,9 @@ export default function Home() {
         </h1>
         <HealthBadge />
         <nav className="flex gap-3">
+          <Link href="/empleados">
+            <Button>Empleados</Button>
+          </Link>
           <Link href="/areas">
             <Button>Áreas</Button>
           </Link>

@@ -114,6 +114,22 @@ export interface paths {
         patch: operations["AreasController_update"];
         trace?: never;
     };
+    "/empleados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EmpleadosController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -162,6 +178,22 @@ export interface components {
             nombre?: string;
             /** @description Id de un Empleado activo; null para quitar */
             supervisorId?: string | null;
+        };
+        EmpleadoListItem: {
+            id: string;
+            legajo: string;
+            nombre: string;
+            apellido: string;
+            puesto: string | null;
+            estado: string;
+            areaId: string | null;
+            areaNombre: string | null;
+        };
+        PaginatedEmpleados: {
+            items: components["schemas"]["EmpleadoListItem"][];
+            total: number;
+            page: number;
+            pageSize: number;
         };
     };
     responses: never;
@@ -357,6 +389,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AreaResponse"];
+                };
+            };
+        };
+    };
+    EmpleadosController_findAll: {
+        parameters: {
+            query?: {
+                /** @description Búsqueda por nombre, apellido o legajo */
+                search?: string;
+                areaId?: string;
+                estado?: "activo" | "inactivo" | "licencia";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEmpleados"];
                 };
             };
         };

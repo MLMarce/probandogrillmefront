@@ -24,8 +24,47 @@ function seedAreas(): FakeArea[] {
   ];
 }
 
+interface FakeEmpleado {
+  id: string;
+  legajo: string;
+  nombre: string;
+  apellido: string;
+  puesto: string | null;
+  estado: string;
+  areaId: string | null;
+}
+
+let empleadosStore: FakeEmpleado[] = seedEmpleados();
+
+function seedEmpleados(): FakeEmpleado[] {
+  const nombres = [
+    ["Lucas", "Gómez", "Mantenimiento de electricidad", "a1", "activo"],
+    ["Laura", "Pérez", "Administración", "a2", "activo"],
+    ["Luis", "Rodríguez", "Mantenimiento de gas", "a1", "inactivo"],
+    ["Ana", "Fernández", "Contabilidad", "a2", "activo"],
+    ["Carlos", "López", "Mantenimiento de electricidad", "a1", "licencia"],
+    ["María", "Martínez", "Recursos Humanos", "a2", "activo"],
+    ["Jorge", "Díaz", "Mantenimiento preventivo", "a1", "activo"],
+    ["Sofía", "Herrera", "Administración", "a2", "activo"],
+    ["Diego", "Suárez", "Mantenimiento de gas", "a1", "activo"],
+    ["Valentina", "Ramos", "Contabilidad", "a2", "inactivo"],
+    ["Martín", "Álvarez", "Mantenimiento de electricidad", "a1", "activo"],
+    ["Camila", "Torres", "Recursos Humanos", "a2", "activo"],
+  ];
+  return nombres.map(([nombre, apellido, puesto, areaId, estado], i) => ({
+    id: `e${i + 1}`,
+    legajo: `L-${String(i + 1).padStart(4, "0")}`,
+    nombre,
+    apellido,
+    puesto,
+    estado,
+    areaId,
+  }));
+}
+
 export function resetAreas(): void {
   areasStore = seedAreas();
+  empleadosStore = seedEmpleados();
 }
 
 let nextId = 3;
@@ -92,5 +131,32 @@ export const handlers = [
     }
     areasStore = areasStore.filter((a) => a.id !== params.id);
     return new HttpResponse(null, { status: 204 });
+  }),
+  http.get(`${API_URL}/empleados`, ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search")?.toLowerCase();
+    const areaId = url.searchParams.get("areaId");
+    const estado = url.searchParams.get("estado");
+    const page = Number(url.searchParams.get("page") ?? "1");
+    const pageSize = Number(url.searchParams.get("pageSize") ?? "10");
+
+    let filtered = [...empleadosStore];
+    if (search) {
+      filtered = filtered.filter(
+        (e) =>
+          e.nombre.toLowerCase().includes(search) ||
+          e.apellido.toLowerCase().includes(search) ||
+          e.legajo.toLowerCase().includes(search),
+      );
+    }
+    if (areaId) filtered = filtered.filter((e) => e.areaId === areaId);
+    if (estado) filtered = filtered.filter((e) => e.estado === estado);
+
+    const total = filtered.length;
+    const items = filtered.slice((page - 1) * pageSize, page * pageSize).map((e) => ({
+      ...e,
+      areaNombre: areasStore.find((a) => a.id === e.areaId)?.nombre ?? null,
+    }));
+    return HttpResponse.json({ items, total, page, pageSize });
   }),
 ];

@@ -11,6 +11,18 @@ export type SessionUser =
   paths["/auth/session"]["get"]["responses"]["200"]["content"]["application/json"];
 export type AreaResponse =
   paths["/areas"]["get"]["responses"]["200"]["content"]["application/json"][number];
+export type EmpleadoListItem =
+  paths["/empleados"]["get"]["responses"]["200"]["content"]["application/json"]["items"][number];
+export type PaginatedEmpleados =
+  paths["/empleados"]["get"]["responses"]["200"]["content"]["application/json"];
+
+export interface EmpleadosQuery {
+  search?: string;
+  areaId?: string;
+  estado?: string;
+  page?: number;
+  pageSize?: number;
+}
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -113,4 +125,17 @@ export async function updateArea(id: string, nombre: string): Promise<AreaRespon
 export async function deleteArea(id: string): Promise<void> {
   const res = await apiFetch(`/areas/${id}`, { method: "DELETE" });
   if (!res.ok) throw await readError(res);
+}
+
+export async function listEmpleados(query: EmpleadosQuery = {}): Promise<PaginatedEmpleados> {
+  const params = new URLSearchParams();
+  if (query.search) params.set("search", query.search);
+  if (query.areaId) params.set("areaId", query.areaId);
+  if (query.estado) params.set("estado", query.estado);
+  if (query.page) params.set("page", String(query.page));
+  if (query.pageSize) params.set("pageSize", String(query.pageSize));
+  const qs = params.toString();
+  const res = await apiFetch(`/empleados${qs ? `?${qs}` : ""}`);
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as PaginatedEmpleados;
 }
