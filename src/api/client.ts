@@ -9,6 +9,25 @@ export type LoginResponse =
   paths["/auth/login"]["post"]["responses"]["200"]["content"]["application/json"];
 export type SessionUser =
   paths["/auth/session"]["get"]["responses"]["200"]["content"]["application/json"];
+export type AreaResponse =
+  paths["/areas"]["get"]["responses"]["200"]["content"]["application/json"][number];
+
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+async function readError(res: Response): Promise<ApiError> {
+  let message = `Error ${res.status}`;
+  try {
+    const body = (await res.json()) as { message?: string };
+    if (body.message) message = body.message;
+  } catch {
+    // respuesta sin cuerpo JSON
+  }
+  return new ApiError(message, res.status);
+}
 
 async function apiFetch(path: string, init: RequestInit = {}, withToken = false): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -63,6 +82,35 @@ export async function recoverPassword(email: string): Promise<void> {
     body: JSON.stringify({ email }),
   });
   if (!res.ok) {
-    throw new Error("No se pudo enviar el email de recuperación");
+    throw await readError(res);
   }
+}
+
+export async function listAreas(): Promise<AreaResponse[]> {
+  const res = await apiFetch("/areas");
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as AreaResponse[];
+}
+
+export async function createArea(nombre: string): Promise<AreaResponse> {
+  const res = await apiFetch("/areas", {
+    method: "POST",
+    body: JSON.stringify({ nombre }),
+  });
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as AreaResponse;
+}
+
+export async function updateArea(id: string, nombre: string): Promise<AreaResponse> {
+  const res = await apiFetch(`/areas/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ nombre }),
+  });
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as AreaResponse;
+}
+
+export async function deleteArea(id: string): Promise<void> {
+  const res = await apiFetch(`/areas/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await readError(res);
 }

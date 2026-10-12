@@ -8,6 +8,27 @@ export function makeToken(expSeconds = 3600): string {
   return `header.${btoa(JSON.stringify(payload))}.signature`;
 }
 
+interface FakeArea {
+  id: string;
+  nombre: string;
+  supervisorId: string | null;
+  empleados: number;
+}
+
+let areasStore: FakeArea[] = [
+  { id: "a1", nombre: "Mantenimiento", supervisorId: null, empleados: 2 },
+  { id: "a2", nombre: "Administración", supervisorId: null, empleados: 0 },
+];
+
+export function resetAreas(): void {
+  areasStore = [
+    { id: "a1", nombre: "Mantenimiento", supervisorId: null, empleados: 2 },
+    { id: "a2", nombre: "Administración", supervisorId: null, empleados: 0 },
+  ];
+}
+
+let nextId = 3;
+
 export const handlers = [
   http.get(`${API_URL}/health`, () => {
     return HttpResponse.json({ status: "ok" });
@@ -27,5 +48,48 @@ export const handlers = [
   }),
   http.post(`${API_URL}/auth/reset-password`, () => {
     return new HttpResponse(null, { status: 202 });
+  }),
+  http.get(`${API_URL}/areas`, () => {
+    return HttpResponse.json(areasStore.map(({ empleados: _e, ...a }) => a));
+  }),
+  http.post(`${API_URL}/areas`, async ({ request }) => {
+    const body = (await request.json()) as { nombre: string };
+    const norm = body.nombre.trim().toLowerCase();
+    if (areasStore.some((a) => a.nombre.toLowerCase() === norm)) {
+      return HttpResponse.json({ message: "Ya existe un Área con ese nombre" }, { status: 409 });
+    }
+    const area: FakeArea = {
+      id: `a${nextId++}`,
+      nombre: body.nombre.trim(),
+      supervisorId: null,
+      empleados: 0,
+    };
+    areasStore.push(area);
+    const { empleados: _e, ...rest } = area;
+    return HttpResponse.json(rest, { status: 201 });
+  }),
+  http.patch(`${API_URL}/areas/:id`, async ({ params, request }) => {
+    const area = areasStore.find((a) => a.id === params.id);
+    if (!area) {
+      return HttpResponse.json({ message: "Área no encontrada" }, { status: 404 });
+    }
+    const body = (await request.json()) as { nombre?: string };
+    if (body.nombre) area.nombre = body.nombre.trim();
+    const { empleados: _e, ...rest } = area;
+    return HttpResponse.json(rest);
+  }),
+  http.delete(`${API_URL}/areas/:id`, ({ params }) => {
+    const area = areasStore.find((a) => a.id === params.id);
+    if (!area) {
+      return HttpResponse.json({ message: "Área no encontrada" }, { status: 404 });
+    }
+    if (area.empleados > 0) {
+      return HttpResponse.json(
+        { message: "El área todavía tiene Empleados asignados" },
+        { status: 409 },
+      );
+    }
+    areasStore = areasStore.filter((a) => a.id !== params.id);
+    return new HttpResponse(null, { status: 204 });
   }),
 ];

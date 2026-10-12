@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HealthBadge } from "@/components/health-badge";
 import { AuthGuard } from "@/components/auth-guard";
@@ -24,9 +25,14 @@ export default function Home() {
           Gestión de Empleados RRHH
         </h1>
         <HealthBadge />
-        <Button variant="outline" onClick={onLogout}>
-          Cerrar sesión
-        </Button>
+        <nav className="flex gap-3">
+          <Link href="/areas">
+            <Button>Áreas</Button>
+          </Link>
+          <Button variant="outline" onClick={onLogout}>
+            Cerrar sesión
+          </Button>
+        </nav>
       </main>
     </AuthGuard>
   );
