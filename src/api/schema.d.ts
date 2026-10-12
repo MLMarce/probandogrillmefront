@@ -185,7 +185,8 @@ export interface components {
             nombre: string;
             apellido: string;
             puesto: string | null;
-            estado: string;
+            /** @enum {string} */
+            estado: "activo" | "inactivo" | "licencia";
             areaId: string | null;
             areaNombre: string | null;
         };

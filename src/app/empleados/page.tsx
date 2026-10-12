@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   AreaResponse,
   EmpleadoListItem,
+  EmpleadosQuery,
   PaginatedEmpleados,
   listAreas,
   listEmpleados,
@@ -19,7 +20,7 @@ export default function EmpleadosPage() {
   );
 }
 
-interface Query {
+interface Query extends EmpleadosQuery {
   search: string;
   areaId: string;
   estado: string;
