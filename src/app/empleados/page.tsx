@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AreaResponse,
   EmpleadoListItem,
@@ -10,7 +11,7 @@ import {
   listEmpleados,
 } from "@/api/client";
 import { AuthGuard } from "@/components/auth-guard";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export default function EmpleadosPage() {
   return (
@@ -76,7 +77,12 @@ function EmpleadosContent() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 bg-zinc-50 p-8 dark:bg-black">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Empleados</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Empleados</h1>
+        <Link href="/empleados/nueva" className={buttonVariants()}>
+          Nuevo Empleado
+        </Link>
+      </div>
 
       <form onSubmit={onSearch} className="flex flex-wrap gap-2">
         <input

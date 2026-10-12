@@ -123,7 +123,7 @@ export interface paths {
         };
         get: operations["EmpleadosController_findAll"];
         put?: never;
-        post?: never;
+        post: operations["EmpleadosController_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -195,6 +195,28 @@ export interface components {
             total: number;
             page: number;
             pageSize: number;
+        };
+        CreateEmpleadoDto: {
+            /** @description Si no se provee, se autgenera secuencialmente */
+            legajo?: string;
+            nombre: string;
+            apellido: string;
+            dni: string;
+            fechaNacimiento?: string;
+            email?: string;
+            telefono?: string;
+            direccion?: string;
+            /** @example Mantenimiento de electricidad */
+            puesto?: string;
+            fechaIngreso?: string;
+            areaId?: string;
+            /** @description Id de un Empleado activo */
+            supervisorId?: string;
+            /**
+             * @default activo
+             * @enum {string}
+             */
+            estado: "activo" | "inactivo" | "licencia";
         };
     };
     responses: never;
@@ -416,6 +438,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedEmpleados"];
+                };
+            };
+        };
+    };
+    EmpleadosController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEmpleadoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpleadoListItem"];
                 };
             };
         };

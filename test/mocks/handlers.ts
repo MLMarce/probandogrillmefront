@@ -29,6 +29,7 @@ interface FakeEmpleado {
   legajo: string;
   nombre: string;
   apellido: string;
+  dni?: string;
   puesto: string | null;
   estado: string;
   areaId: string | null;
@@ -51,7 +52,7 @@ function seedEmpleados(): FakeEmpleado[] {
     ["Martín", "Álvarez", "Mantenimiento de electricidad", "a1", "activo"],
     ["Camila", "Torres", "Recursos Humanos", "a2", "activo"],
   ];
-  return nombres.map(([nombre, apellido, puesto, areaId, estado], i) => ({
+  const empleados: FakeEmpleado[] = nombres.map(([nombre, apellido, puesto, areaId, estado], i) => ({
     id: `e${i + 1}`,
     legajo: `L-${String(i + 1).padStart(4, "0")}`,
     nombre,
@@ -60,14 +61,18 @@ function seedEmpleados(): FakeEmpleado[] {
     estado,
     areaId,
   }));
+  empleados[0].dni = "30111222";
+  return empleados;
 }
 
 export function resetAreas(): void {
   areasStore = seedAreas();
   empleadosStore = seedEmpleados();
+  nextEmpleadoId = 13;
 }
 
 let nextId = 3;
+let nextEmpleadoId = 13;
 
 export const handlers = [
   http.get(`${API_URL}/health`, () => {
@@ -159,4 +164,47 @@ export const handlers = [
     }));
     return HttpResponse.json({ items, total, page, pageSize });
   }),
+  http.post(`${API_URL}/empleados`, async ({ request }) => {
+    const body = (await request.json()) as {
+      legajo?: string;
+      nombre: string;
+      apellido: string;
+      dni: string;
+      puesto?: string;
+      areaId?: string;
+    };
+    const legajo = body.legajo?.trim() || nextLegajo();
+    if (empleadosStore.some((e) => e.legajo === legajo)) {
+      return HttpResponse.json({ message: "Ya existe un Empleado con ese legajo" }, { status: 409 });
+    }
+    if (empleadosStore.some((e) => e.dni === body.dni)) {
+      return HttpResponse.json({ message: "Ya existe un Empleado con ese DNI" }, { status: 409 });
+    }
+    const empleado: FakeEmpleado = {
+      id: `e${nextEmpleadoId++}`,
+      legajo,
+      nombre: body.nombre.trim(),
+      apellido: body.apellido.trim(),
+      puesto: body.puesto ?? null,
+      estado: "activo",
+      areaId: body.areaId ?? null,
+    };
+    empleadosStore.push(empleado);
+    return HttpResponse.json(
+      {
+        ...empleado,
+        areaNombre: areasStore.find((a) => a.id === empleado.areaId)?.nombre ?? null,
+      },
+      { status: 201 },
+    );
+  }),
 ];
+
+function nextLegajo(): string {
+  let n = empleadosStore.length + 1;
+  for (;;) {
+    const legajo = `L-${String(n).padStart(4, "0")}`;
+    if (!empleadosStore.some((e) => e.legajo === legajo)) return legajo;
+    n += 1;
+  }
+}

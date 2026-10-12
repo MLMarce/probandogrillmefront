@@ -139,3 +139,27 @@ export async function listEmpleados(query: EmpleadosQuery = {}): Promise<Paginat
   if (!res.ok) throw await readError(res);
   return (await res.json()) as PaginatedEmpleados;
 }
+
+export interface CreateEmpleadoPayload {
+  legajo?: string;
+  nombre: string;
+  apellido: string;
+  dni: string;
+  fechaNacimiento?: string;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
+  puesto?: string;
+  fechaIngreso?: string;
+  areaId?: string;
+}
+
+export async function createEmpleado(payload: CreateEmpleadoPayload): Promise<EmpleadoListItem> {
+  const clean: CreateEmpleadoPayload = { ...payload };
+  for (const key of Object.keys(clean) as (keyof CreateEmpleadoPayload)[]) {
+    if (clean[key] === "" || clean[key] === undefined) delete clean[key];
+  }
+  const res = await apiFetch("/empleados", { method: "POST", body: JSON.stringify(clean) }, true);
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as EmpleadoListItem;
+}
