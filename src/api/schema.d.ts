@@ -149,7 +149,7 @@ export interface components {
         AreaResponse: {
             id: string;
             nombre: string;
-            supervisorId: Record<string, never> | null;
+            supervisorId: string | null;
         };
         CreateAreaDto: {
             /** @example Mantenimiento */
@@ -161,7 +161,7 @@ export interface components {
             /** @example Mantenimiento */
             nombre?: string;
             /** @description Id de un Empleado activo; null para quitar */
-            supervisorId?: Record<string, never>;
+            supervisorId?: string | null;
         };
     };
     responses: never;
@@ -307,7 +307,7 @@ export interface operations {
             };
         };
         responses: {
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

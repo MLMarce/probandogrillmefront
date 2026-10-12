@@ -31,6 +31,25 @@ describe("AreasPage", () => {
     expect(await screen.findByText("Logística")).toBeInTheDocument();
   });
 
+  it("edita un área existente", async () => {
+    const user = userEvent.setup();
+    render(<AreasPage />);
+    await screen.findByText("Mantenimiento");
+
+    const filas = screen.getAllByRole("listitem");
+    const mantenimiento = filas.find((f) => f.textContent?.includes("Mantenimiento"));
+    await user.click(within(mantenimiento!).getByRole("button", { name: /editar/i }));
+
+    const input = screen.getByPlaceholderText(/nombre del área/i);
+    expect(input).toHaveValue("Mantenimiento");
+    await user.clear(input);
+    await user.type(input, "Mantenimiento eléctrico");
+    await user.click(screen.getByRole("button", { name: /^guardar$/i }));
+
+    expect(await screen.findByText("Mantenimiento eléctrico")).toBeInTheDocument();
+    expect(screen.queryByText("Mantenimiento")).not.toBeInTheDocument();
+  });
+
   it("muestra el error del backend al borrar un área con Empleados", async () => {
     const user = userEvent.setup();
     render(<AreasPage />);

@@ -15,16 +15,17 @@ interface FakeArea {
   empleados: number;
 }
 
-let areasStore: FakeArea[] = [
-  { id: "a1", nombre: "Mantenimiento", supervisorId: null, empleados: 2 },
-  { id: "a2", nombre: "Administración", supervisorId: null, empleados: 0 },
-];
+let areasStore: FakeArea[] = seedAreas();
 
-export function resetAreas(): void {
-  areasStore = [
+function seedAreas(): FakeArea[] {
+  return [
     { id: "a1", nombre: "Mantenimiento", supervisorId: null, empleados: 2 },
     { id: "a2", nombre: "Administración", supervisorId: null, empleados: 0 },
   ];
+}
+
+export function resetAreas(): void {
+  areasStore = seedAreas();
 }
 
 let nextId = 3;
