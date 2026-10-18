@@ -109,6 +109,16 @@ function esVigente(l: { desde: string; hasta: string }): boolean {
   return new Date(l.desde).getTime() <= ahora && new Date(l.hasta).getTime() >= ahora;
 }
 
+const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizarPeriodo(desdeIso: string, hastaIso: string): { desde: Date; hasta: Date } {
+  const desde = new Date(desdeIso);
+  const hasta = SOLO_FECHA.test(hastaIso)
+    ? new Date(`${hastaIso}T23:59:59.999Z`)
+    : new Date(hastaIso);
+  return { desde, hasta };
+}
+
 function sincronizarEstadoPorLicencia(empleadoId: string): void {
   const empleado = empleadosStore.find((e) => e.id === empleadoId);
   if (!empleado) return;
@@ -323,17 +333,25 @@ export const handlers = [
     if (!empleado) {
       return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
     }
-    if (new Date(body.desde).getTime() > new Date(body.hasta).getTime()) {
+    const { desde, hasta } = normalizarPeriodo(body.desde, body.hasta);
+    if (desde.getTime() > hasta.getTime()) {
       return HttpResponse.json(
         { message: "La fecha desde debe ser anterior o igual a la fecha hasta" },
         { status: 422 },
       );
     }
+    const vigente = esVigente({ desde: desde.toISOString(), hasta: hasta.toISOString() });
+    if (vigente && empleado.estado === "inactivo") {
+      return HttpResponse.json(
+        { message: "El Empleado está inactivo: no se puede registrar una licencia vigente" },
+        { status: 409 },
+      );
+    }
     const solape = licenciasStore.some(
       (l) =>
         l.empleadoId === body.empleadoId &&
-        new Date(l.desde).getTime() <= new Date(body.hasta).getTime() &&
-        new Date(l.hasta).getTime() >= new Date(body.desde).getTime(),
+        new Date(l.desde).getTime() <= hasta.getTime() &&
+        new Date(l.hasta).getTime() >= desde.getTime(),
     );
     if (solape) {
       return HttpResponse.json(
@@ -344,8 +362,8 @@ export const handlers = [
     const licencia: FakeLicencia = {
       id: `lic${nextLicenciaId++}`,
       empleadoId: body.empleadoId,
-      desde: new Date(body.desde).toISOString(),
-      hasta: new Date(body.hasta).toISOString(),
+      desde: desde.toISOString(),
+      hasta: hasta.toISOString(),
       motivo: body.motivo?.trim() || null,
     };
     licenciasStore.push(licencia);

@@ -9,7 +9,6 @@ import {
   EmpleadoDetalle,
   EmpleadoListItem,
   LicenciaResponse,
-  createLicencia,
   darDeBaja,
   getEmpleado,
   listAreas,
@@ -18,7 +17,9 @@ import {
   reactivarEmpleado,
   updateEmpleado,
 } from "@/api/client";
+import { fecha } from "@/lib/fechas";
 import { Button } from "@/components/ui/button";
+import { LicenciasSection } from "./licencias-seccion";
 
 interface FormState {
   legajo: string;
@@ -33,12 +34,6 @@ interface FormState {
   fechaIngreso: string;
   areaId: string;
   supervisorId: string;
-}
-
-interface LicenciaFormState {
-  desde: string;
-  hasta: string;
-  motivo: string;
 }
 
 function toForm(e: EmpleadoDetalle): FormState {
@@ -71,13 +66,6 @@ export function FichaEmpleado({ id }: { id: string }) {
   const [guardando, setGuardando] = useState(false);
   const [confirmandoBaja, setConfirmandoBaja] = useState(false);
   const [accionEnCurso, setAccionEnCurso] = useState(false);
-  const [mostrarFormLicencia, setMostrarFormLicencia] = useState(false);
-  const [licenciaForm, setLicenciaForm] = useState<LicenciaFormState>({
-    desde: "",
-    hasta: "",
-    motivo: "",
-  });
-  const [guardandoLicencia, setGuardandoLicencia] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,33 +125,6 @@ export function FichaEmpleado({ id }: { id: string }) {
       setAccionEnCurso(false);
     }
   }
-
-  async function onCrearLicencia(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setGuardandoLicencia(true);
-    try {
-      await createLicencia({
-        empleadoId: id,
-        desde: licenciaForm.desde,
-        hasta: licenciaForm.hasta,
-        motivo: licenciaForm.motivo || undefined,
-      });
-      const [licenciasData, data] = await Promise.all([listLicencias(id), getEmpleado(id)]);
-      setLicencias(licenciasData);
-      setEmpleado(data);
-      setForm(toForm(data));
-      setLicenciaForm({ desde: "", hasta: "", motivo: "" });
-      setMostrarFormLicencia(false);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "No se pudo registrar la licencia");
-    } finally {
-      setGuardandoLicencia(false);
-    }
-  }
-
-  const fecha = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString("es-AR") : "—";
 
   const filas: [string, string][] = empleado
     ? [
@@ -271,98 +232,16 @@ export function FichaEmpleado({ id }: { id: string }) {
       )}
 
       {empleado && (
-        <section className="rounded border bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="flex items-center justify-between border-b px-4 py-3 dark:border-zinc-800">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Licencias</h2>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setMostrarFormLicencia((v) => !v);
-                setError(null);
-              }}
-            >
-              {mostrarFormLicencia ? "Cancelar" : "Registrar licencia"}
-            </Button>
-          </div>
-
-          {mostrarFormLicencia && (
-            <form
-              onSubmit={onCrearLicencia}
-              className="flex flex-col gap-3 border-b px-4 py-3 dark:border-zinc-800"
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <label className={labelCls}>
-                  Desde
-                  <input
-                    type="date"
-                    required
-                    value={licenciaForm.desde}
-                    onChange={(e) =>
-                      setLicenciaForm((f) => ({ ...f, desde: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                </label>
-                <label className={labelCls}>
-                  Hasta
-                  <input
-                    type="date"
-                    required
-                    value={licenciaForm.hasta}
-                    onChange={(e) =>
-                      setLicenciaForm((f) => ({ ...f, hasta: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                </label>
-                <label className={labelCls}>
-                  Motivo (opcional)
-                  <input
-                    value={licenciaForm.motivo}
-                    onChange={(e) =>
-                      setLicenciaForm((f) => ({ ...f, motivo: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={guardandoLicencia}>
-                  {guardandoLicencia ? "Guardando…" : "Guardar licencia"}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          <ul className="divide-y dark:divide-zinc-800">
-            {licencias.length === 0 && (
-              <li className="px-4 py-3 text-sm text-zinc-500">Sin licencias registradas.</li>
-            )}
-            {licencias.map((l) => (
-              <li
-                key={l.id}
-                className={`flex flex-wrap items-center justify-between gap-2 px-4 py-2 ${
-                  l.vigente
-                    ? "border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20"
-                    : ""
-                }`}
-              >
-                <span className="text-sm">
-                  {fecha(l.desde)} – {fecha(l.hasta)}
-                </span>
-                <span className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  {l.motivo ?? "Sin motivo"}
-                  {l.vigente && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                      Vigente
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <LicenciasSection
+          empleadoId={id}
+          licencias={licencias}
+          onActualizado={(lista, data) => {
+            setLicencias(lista);
+            setEmpleado(data);
+            setForm(toForm(data));
+          }}
+          onError={setError}
+        />
       )}
 
       {empleado && editando && form && (

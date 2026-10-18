@@ -709,7 +709,10 @@ export interface operations {
     LicenciasController_create: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Bearer <token> del Administrador de RRHH */
+                authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };

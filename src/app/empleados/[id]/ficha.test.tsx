@@ -15,6 +15,12 @@ function renderFicha(id = "e1") {
   render(<FichaEmpleado id={id} />);
 }
 
+function diasDesdeHoy(dias: number): string {
+  const base = new Date();
+  base.setHours(12, 0, 0, 0);
+  return new Date(base.getTime() + dias * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 describe("FichaEmpleadoPage", () => {
   beforeEach(() => {
     push.mockClear();
@@ -106,12 +112,8 @@ describe("FichaEmpleadoPage", () => {
     expect(screen.getByText("Sin licencias registradas.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /registrar licencia/i }));
-    const hoy = new Date();
-    hoy.setHours(12, 0, 0, 0);
-    const enCinco = new Date(hoy.getTime() + 5 * 24 * 60 * 60 * 1000);
-    const valor = (d: Date) => d.toISOString().slice(0, 10);
-    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: valor(hoy) } });
-    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: valor(enCinco) } });
+    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: diasDesdeHoy(0) } });
+    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: diasDesdeHoy(5) } });
     await user.type(screen.getByLabelText(/^motivo/i), "Estudio");
     await user.click(screen.getByRole("button", { name: /guardar licencia/i }));
 
@@ -141,15 +143,25 @@ describe("FichaEmpleadoPage", () => {
     await screen.findByRole("heading", { name: "Carlos López" });
 
     await user.click(screen.getByRole("button", { name: /registrar licencia/i }));
-    const hoy = new Date();
-    hoy.setHours(12, 0, 0, 0);
-    const enTres = new Date(hoy.getTime() + 3 * 24 * 60 * 60 * 1000);
-    const valor = (d: Date) => d.toISOString().slice(0, 10);
-    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: valor(hoy) } });
-    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: valor(enTres) } });
+    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: diasDesdeHoy(0) } });
+    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: diasDesdeHoy(3) } });
     await user.click(screen.getByRole("button", { name: /guardar licencia/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/solapa/i);
     expect(screen.getByRole("button", { name: /guardar licencia/i })).toBeInTheDocument();
+  });
+
+  it("rechaza una licencia vigente sobre un Empleado inactivo", async () => {
+    const user = userEvent.setup();
+    renderFicha("e10");
+    await screen.findByRole("heading", { name: "Valentina Ramos" });
+
+    await user.click(screen.getByRole("button", { name: /registrar licencia/i }));
+    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: diasDesdeHoy(0) } });
+    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: diasDesdeHoy(3) } });
+    await user.click(screen.getByRole("button", { name: /guardar licencia/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/inactivo/i);
+    expect((await getEmpleado("e10")).estado).toBe("inactivo");
   });
 });
