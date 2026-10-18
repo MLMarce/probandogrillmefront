@@ -71,9 +71,12 @@ function seedEmpleados(): FakeEmpleado[] {
   return empleados;
 }
 
+let licenciasStore: { empleadoId: string; desde: string; hasta: string }[] = [];
+
 export function resetAreas(): void {
   areasStore = seedAreas();
   empleadosStore = seedEmpleados();
+  licenciasStore = [];
   nextEmpleadoId = 13;
 }
 
@@ -245,6 +248,8 @@ export const handlers = [
     if (empleado.estado === "inactivo") {
       return HttpResponse.json({ message: "El Empleado ya está inactivo" }, { status: 409 });
     }
+    const bloqueo = licenciaVigente(empleado.id);
+    if (bloqueo) return bloqueo;
     empleado.estado = "inactivo";
     return HttpResponse.json(detalleDe(empleado));
   }),
@@ -256,10 +261,27 @@ export const handlers = [
     if (empleado.estado === "activo") {
       return HttpResponse.json({ message: "El Empleado ya está activo" }, { status: 409 });
     }
+    const bloqueo = licenciaVigente(empleado.id);
+    if (bloqueo) return bloqueo;
     empleado.estado = "activo";
     return HttpResponse.json(detalleDe(empleado));
   }),
 ];
+
+function licenciaVigente(empleadoId: string) {
+  const ahora = Date.now();
+  const hay = licenciasStore.some(
+    (l) =>
+      l.empleadoId === empleadoId &&
+      new Date(l.desde).getTime() <= ahora &&
+      new Date(l.hasta).getTime() >= ahora,
+  );
+  if (!hay) return null;
+  return HttpResponse.json(
+    { message: "El Empleado tiene una licencia vigente: la operación queda bloqueada" },
+    { status: 409 },
+  );
+}
 
 function detalleDe(empleado: FakeEmpleado) {
   const area = areasStore.find((a) => a.id === empleado.areaId);
