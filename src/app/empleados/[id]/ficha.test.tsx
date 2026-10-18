@@ -64,4 +64,38 @@ describe("FichaEmpleadoPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/legajo/i);
     expect(screen.getByRole("button", { name: /^guardar$/i })).toBeInTheDocument();
   });
+
+  it("da de baja con diálogo de confirmación", async () => {
+    const user = userEvent.setup();
+    renderFicha();
+    await screen.findByRole("heading", { name: "Lucas Gómez" });
+
+    await user.click(screen.getByRole("button", { name: /dar de baja/i }));
+    const dialogo = screen.getByRole("alertdialog", { name: /confirmar baja/i });
+    expect(dialogo).toHaveTextContent(/se conserva/i);
+
+    await user.click(screen.getByRole("button", { name: /^cancelar$/i }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect((await getEmpleado("e1")).estado).toBe("activo");
+
+    await user.click(screen.getByRole("button", { name: /dar de baja/i }));
+    await user.click(screen.getByRole("button", { name: /confirmar baja/i }));
+
+    expect(await screen.findByRole("button", { name: /^reactivar$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /dar de baja/i })).not.toBeInTheDocument();
+    expect((await getEmpleado("e1")).estado).toBe("inactivo");
+  });
+
+  it("reactiva un Empleado inactivo", async () => {
+    const user = userEvent.setup();
+    renderFicha("e3");
+    await screen.findByRole("heading", { name: "Luis Rodríguez" });
+    expect(screen.getByText("inactivo")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^reactivar$/i }));
+
+    expect(await screen.findByRole("button", { name: /dar de baja/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^reactivar$/i })).not.toBeInTheDocument();
+    expect((await getEmpleado("e3")).estado).toBe("activo");
+  });
 });

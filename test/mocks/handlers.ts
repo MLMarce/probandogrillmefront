@@ -237,6 +237,28 @@ export const handlers = [
     Object.assign(empleado, body);
     return HttpResponse.json(detalleDe(empleado));
   }),
+  http.post(`${API_URL}/empleados/:id/baja`, ({ params }) => {
+    const empleado = empleadosStore.find((e) => e.id === params.id || e.legajo === params.id);
+    if (!empleado) {
+      return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
+    }
+    if (empleado.estado === "inactivo") {
+      return HttpResponse.json({ message: "El Empleado ya está inactivo" }, { status: 409 });
+    }
+    empleado.estado = "inactivo";
+    return HttpResponse.json(detalleDe(empleado));
+  }),
+  http.post(`${API_URL}/empleados/:id/reactivar`, ({ params }) => {
+    const empleado = empleadosStore.find((e) => e.id === params.id || e.legajo === params.id);
+    if (!empleado) {
+      return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
+    }
+    if (empleado.estado === "activo") {
+      return HttpResponse.json({ message: "El Empleado ya está activo" }, { status: 409 });
+    }
+    empleado.estado = "activo";
+    return HttpResponse.json(detalleDe(empleado));
+  }),
 ];
 
 function detalleDe(empleado: FakeEmpleado) {

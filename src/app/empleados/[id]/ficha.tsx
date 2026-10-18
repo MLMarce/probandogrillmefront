@@ -8,9 +8,11 @@ import {
   AreaResponse,
   EmpleadoDetalle,
   EmpleadoListItem,
+  darDeBaja,
   getEmpleado,
   listAreas,
   listEmpleadosActivos,
+  reactivarEmpleado,
   updateEmpleado,
 } from "@/api/client";
 import { Button } from "@/components/ui/button";
@@ -57,6 +59,8 @@ export function FichaEmpleado({ id }: { id: string }) {
   const [editando, setEditando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [confirmandoBaja, setConfirmandoBaja] = useState(false);
+  const [accionEnCurso, setAccionEnCurso] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +101,22 @@ export function FichaEmpleado({ id }: { id: string }) {
       setError(e instanceof ApiError ? e.message : "No se pudo guardar la ficha");
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function ejecutarAccion(accion: () => Promise<EmpleadoDetalle>, mensaje: string) {
+    setError(null);
+    setAccionEnCurso(true);
+    try {
+      const resultado = await accion();
+      setEmpleado(resultado);
+      setForm(toForm(resultado));
+      setEditando(false);
+      setConfirmandoBaja(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : mensaje);
+    } finally {
+      setAccionEnCurso(false);
     }
   }
 
@@ -153,8 +173,57 @@ export function FichaEmpleado({ id }: { id: string }) {
               </div>
             ))}
           </dl>
-          <div className="border-t px-4 py-3 dark:border-zinc-800">
+          <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3 dark:border-zinc-800">
             <Button onClick={() => setEditando(true)}>Editar</Button>
+            {empleado.estado === "activo" && !confirmandoBaja && (
+              <Button
+                variant="destructive"
+                onClick={() => setConfirmandoBaja(true)}
+                disabled={accionEnCurso}
+              >
+                Dar de baja
+              </Button>
+            )}
+            {empleado.estado === "inactivo" && (
+              <Button
+                onClick={() =>
+                  void ejecutarAccion(() => reactivarEmpleado(id), "No se pudo reactivar")
+                }
+                disabled={accionEnCurso}
+              >
+                {accionEnCurso ? "Reactivando…" : "Reactivar"}
+              </Button>
+            )}
+            {confirmandoBaja && (
+              <div
+                role="alertdialog"
+                aria-label="Confirmar baja"
+                className="flex w-full flex-col gap-3 rounded border border-red-300 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30"
+              >
+                <p className="text-sm">
+                  ¿Dar de baja a <strong>{empleado.nombre} {empleado.apellido}</strong>? El
+                  registro se conserva y pasará a <strong>inactivo</strong>.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    disabled={accionEnCurso}
+                    onClick={() =>
+                      void ejecutarAccion(() => darDeBaja(id), "No se pudo dar de baja")
+                    }
+                  >
+                    {accionEnCurso ? "Procesando…" : "Confirmar baja"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={accionEnCurso}
+                    onClick={() => setConfirmandoBaja(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}

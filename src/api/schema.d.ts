@@ -148,6 +148,40 @@ export interface paths {
         patch: operations["EmpleadosController_update"];
         trace?: never;
     };
+    "/empleados/{id}/baja": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Baja lógica: Estado → inactivo, sin borrado físico */
+        post: operations["EmpleadosController_darDeBaja"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/empleados/{id}/reactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reactiva un Empleado inactivo → Estado activo */
+        post: operations["EmpleadosController_reactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -555,6 +589,54 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateEmpleadoDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpleadoDetalle"];
+                };
+            };
+        };
+    };
+    EmpleadosController_darDeBaja: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer <token> del Administrador de RRHH */
+                authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpleadoDetalle"];
+                };
+            };
+        };
+    };
+    EmpleadosController_reactivar: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer <token> del Administrador de RRHH */
+                authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

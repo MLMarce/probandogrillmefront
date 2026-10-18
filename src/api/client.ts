@@ -192,3 +192,21 @@ export async function updateEmpleado(
   if (!res.ok) throw await readError(res);
   return (await res.json()) as EmpleadoDetalle;
 }
+
+async function postEstado(id: string, accion: "baja" | "reactivar"): Promise<EmpleadoDetalle> {
+  const res = await apiFetch(
+    `/empleados/${encodeURIComponent(id)}/${accion}`,
+    { method: "POST" },
+    true,
+  );
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as EmpleadoDetalle;
+}
+
+export async function darDeBaja(id: string): Promise<EmpleadoDetalle> {
+  return postEstado(id, "baja");
+}
+
+export async function reactivarEmpleado(id: string): Promise<EmpleadoDetalle> {
+  return postEstado(id, "reactivar");
+}
