@@ -227,3 +227,28 @@ export async function createLicencia(payload: CreateLicenciaPayload): Promise<Li
   if (!res.ok) throw await readError(res);
   return (await res.json()) as LicenciaResponse;
 }
+
+export type PreviewImportacion =
+  paths["/importaciones/preview"]["post"]["responses"]["200"]["content"]["application/json"];
+export type ConfirmacionImportacion =
+  paths["/importaciones/confirm"]["post"]["responses"]["200"]["content"]["application/json"];
+
+export async function previewImportacion(csv: string): Promise<PreviewImportacion> {
+  const res = await apiFetch(
+    "/importaciones/preview",
+    { method: "POST", body: JSON.stringify({ csv }) },
+    true,
+  );
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as PreviewImportacion;
+}
+
+export async function confirmarImportacion(csv: string): Promise<ConfirmacionImportacion> {
+  const res = await apiFetch(
+    "/importaciones/confirm",
+    { method: "POST", body: JSON.stringify({ csv }) },
+    true,
+  );
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as ConfirmacionImportacion;
+}

@@ -80,9 +80,14 @@ function EmpleadosContent() {
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 bg-zinc-50 p-8 dark:bg-black">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Empleados</h1>
-        <Link href="/empleados/nueva" className={buttonVariants()}>
-          Nuevo Empleado
-        </Link>
+        <span className="flex gap-2">
+          <Link href="/empleados/importar" className={buttonVariants({ variant: "outline" })}>
+            Importar CSV
+          </Link>
+          <Link href="/empleados/nueva" className={buttonVariants()}>
+            Nuevo Empleado
+          </Link>
+        </span>
       </div>
 
       <form onSubmit={onSearch} className="flex flex-wrap gap-2">

@@ -127,6 +127,127 @@ function sincronizarEstadoPorLicencia(empleadoId: string): void {
   else if (!vigente && empleado.estado === "licencia") empleado.estado = "activo";
 }
 
+interface FilaImportacion {
+  fila: number;
+  estado: "valida" | "error" | "omitida";
+  motivo: string | null;
+  legajo: string | null;
+  nombre: string;
+  apellido: string;
+  dni: string;
+  email: string | null;
+  area: string | null;
+  areaId: string | null;
+  telefono: string | null;
+  direccion: string | null;
+  puesto: string | null;
+  fechaNacimiento: string | null;
+  fechaIngreso: string | null;
+}
+
+const COLUMNAS_REQUERIDAS = ["nombre", "apellido", "dni"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validarImportacion(csv: string): { filas: FilaImportacion[] } | { error: string } {
+  const lineas = csv
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "");
+  if (lineas.length <= 1) {
+    return { error: "El CSV no tiene filas de datos" };
+  }
+  const headers = lineas[0].split(",").map((h) => h.trim().toLowerCase());
+  for (const requerida of COLUMNAS_REQUERIDAS) {
+    if (!headers.includes(requerida)) {
+      return { error: `El CSV debe incluir las columnas: ${COLUMNAS_REQUERIDAS.join(", ")}` };
+    }
+  }
+  const legajosExistentes = new Set(empleadosStore.map((e) => e.legajo));
+  const dnisExistentes = new Set(empleadosStore.map((e) => e.dni));
+  const legajosCsv = new Set<string>();
+  const dnisCsv = new Set<string>();
+  const areasPorNorm = new Map(areasStore.map((a) => [a.nombre.toLowerCase(), a.id]));
+
+  const filas: FilaImportacion[] = lineas.slice(1).map((linea, index) => {
+    const valores = linea.split(",");
+    const datos: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      datos[h] = (valores[i] ?? "").trim();
+    });
+    const v = (col: string) => (datos[col] ?? "").trim();
+    const base: FilaImportacion = {
+      fila: index + 1,
+      estado: "valida",
+      motivo: null,
+      legajo: v("legajo") || null,
+      nombre: v("nombre"),
+      apellido: v("apellido"),
+      dni: v("dni"),
+      email: v("email") || null,
+      area: v("area") || null,
+      areaId: null,
+      telefono: v("telefono") || null,
+      direccion: v("direccion") || null,
+      puesto: v("puesto") || null,
+      fechaNacimiento: v("fechanacimiento") || null,
+      fechaIngreso: v("fechaingreso") || null,
+    };
+    if (!base.nombre || !base.apellido || !base.dni) {
+      return {
+        ...base,
+        estado: "error",
+        motivo: "Faltan campos requeridos (nombre, apellido, dni)",
+      };
+    }
+    if (base.email && !EMAIL_RE.test(base.email)) {
+      return { ...base, estado: "error", motivo: "Email inválido" };
+    }
+    if (base.fechaNacimiento && Number.isNaN(Date.parse(base.fechaNacimiento))) {
+      return { ...base, estado: "error", motivo: "Fecha de nacimiento inválida" };
+    }
+    if (base.fechaIngreso && Number.isNaN(Date.parse(base.fechaIngreso))) {
+      return { ...base, estado: "error", motivo: "Fecha de ingreso inválida" };
+    }
+    if (base.area) {
+      const areaId = areasPorNorm.get(base.area.toLowerCase());
+      if (!areaId) return { ...base, estado: "error", motivo: `El Área "${base.area}" no existe` };
+      base.areaId = areaId;
+    }
+    if (base.legajo && (legajosExistentes.has(base.legajo) || legajosCsv.has(base.legajo))) {
+      return { ...base, estado: "omitida", motivo: `El legajo "${base.legajo}" ya existe` };
+    }
+    if (dnisExistentes.has(base.dni) || dnisCsv.has(base.dni)) {
+      return { ...base, estado: "omitida", motivo: `El DNI "${base.dni}" ya existe` };
+    }
+    if (base.legajo) legajosCsv.add(base.legajo);
+    dnisCsv.add(base.dni);
+    return base;
+  });
+  return { filas };
+}
+
+function previewDe(filas: FilaImportacion[]) {
+  return {
+    filas: filas.map((f) => ({
+      fila: f.fila,
+      estado: f.estado,
+      motivo: f.motivo,
+      legajo: f.legajo,
+      nombre: f.nombre,
+      apellido: f.apellido,
+      dni: f.dni,
+      email: f.email,
+      area: f.area,
+    })),
+    resumen: {
+      total: filas.length,
+      validas: filas.filter((f) => f.estado === "valida").length,
+      errores: filas.filter((f) => f.estado === "error").length,
+      omitidas: filas.filter((f) => f.estado === "omitida").length,
+    },
+  };
+}
+
 export const handlers = [
   http.get(`${API_URL}/health`, () => {
     return HttpResponse.json({ status: "ok" });
@@ -369,6 +490,66 @@ export const handlers = [
     licenciasStore.push(licencia);
     sincronizarEstadoPorLicencia(licencia.empleadoId);
     return HttpResponse.json({ ...licencia, vigente: esVigente(licencia) }, { status: 201 });
+  }),
+  http.post(`${API_URL}/importaciones/preview`, async ({ request }) => {
+    const body = (await request.json()) as { csv: string };
+    const validacion = validarImportacion(body.csv);
+    if ("error" in validacion) {
+      return HttpResponse.json({ message: validacion.error }, { status: 422 });
+    }
+    return HttpResponse.json(previewDe(validacion.filas));
+  }),
+  http.post(`${API_URL}/importaciones/confirm`, async ({ request }) => {
+    const body = (await request.json()) as { csv: string };
+    const validacion = validarImportacion(body.csv);
+    if ("error" in validacion) {
+      return HttpResponse.json({ message: validacion.error }, { status: 422 });
+    }
+    const detalle = validacion.filas.map((fila) => {
+      if (fila.estado !== "valida") {
+        return {
+          fila: fila.fila,
+          estado: fila.estado === "omitida" ? "omitida" : "error",
+          motivo: fila.motivo,
+          legajo: null,
+          nombre: fila.nombre,
+          apellido: fila.apellido,
+          dni: fila.dni,
+        };
+      }
+      const empleado: FakeEmpleado = {
+        id: `e${nextEmpleadoId++}`,
+        legajo: fila.legajo ?? nextLegajo(),
+        nombre: fila.nombre,
+        apellido: fila.apellido,
+        dni: fila.dni,
+        email: fila.email,
+        telefono: fila.telefono,
+        direccion: fila.direccion,
+        puesto: fila.puesto,
+        fechaNacimiento: fila.fechaNacimiento,
+        fechaIngreso: fila.fechaIngreso,
+        estado: "activo",
+        areaId: fila.areaId,
+      };
+      empleadosStore.push(empleado);
+      return {
+        fila: fila.fila,
+        estado: "creada",
+        motivo: null,
+        legajo: empleado.legajo,
+        nombre: fila.nombre,
+        apellido: fila.apellido,
+        dni: fila.dni,
+      };
+    });
+    return HttpResponse.json({
+      creados: detalle.filter((d) => d.estado === "creada").length,
+      omitidos: detalle.filter((d) => d.estado === "omitida").length,
+      errores: detalle.filter((d) => d.estado === "error").length,
+      totalFilas: detalle.length,
+      detalle,
+    });
   }),
 ];
 
