@@ -210,3 +210,20 @@ export async function darDeBaja(id: string): Promise<EmpleadoDetalle> {
 export async function reactivarEmpleado(id: string): Promise<EmpleadoDetalle> {
   return postEstado(id, "reactivar");
 }
+
+export type LicenciaResponse =
+  paths["/licencias"]["get"]["responses"]["200"]["content"]["application/json"][number];
+export type CreateLicenciaPayload =
+  paths["/licencias"]["post"]["requestBody"]["content"]["application/json"];
+
+export async function listLicencias(empleadoId: string): Promise<LicenciaResponse[]> {
+  const res = await apiFetch(`/licencias?empleadoId=${encodeURIComponent(empleadoId)}`);
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as LicenciaResponse[];
+}
+
+export async function createLicencia(payload: CreateLicenciaPayload): Promise<LicenciaResponse> {
+  const res = await apiFetch("/licencias", { method: "POST", body: JSON.stringify(payload) }, true);
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as LicenciaResponse;
+}

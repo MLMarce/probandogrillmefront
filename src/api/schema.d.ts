@@ -182,6 +182,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/licencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Histórico de licencias de un Empleado (más recientes primero) */
+        get: operations["LicenciasController_findAll"];
+        put?: never;
+        /** Registra una licencia; sincroniza el Estado del Empleado */
+        post: operations["LicenciasController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -300,6 +318,25 @@ export interface components {
             areaId?: string;
             /** @description Id de un Empleado activo */
             supervisorId?: string;
+        };
+        CreateLicenciaDto: {
+            empleadoId: string;
+            /** Format: date-time */
+            desde: string;
+            /** Format: date-time */
+            hasta: string;
+            motivo?: string;
+        };
+        LicenciaResponse: {
+            id: string;
+            empleadoId: string;
+            /** Format: date-time */
+            desde: string;
+            /** Format: date-time */
+            hasta: string;
+            motivo: string | null;
+            /** @description desde ≤ hoy ≤ hasta */
+            vigente: boolean;
         };
     };
     responses: never;
@@ -644,6 +681,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmpleadoDetalle"];
+                };
+            };
+        };
+    };
+    LicenciasController_findAll: {
+        parameters: {
+            query: {
+                empleadoId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenciaResponse"][];
+                };
+            };
+        };
+    };
+    LicenciasController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLicenciaDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenciaResponse"];
                 };
             };
         };

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FichaEmpleado } from "./ficha";
 import { getEmpleado } from "@/api/client";
@@ -97,5 +97,59 @@ describe("FichaEmpleadoPage", () => {
     expect(await screen.findByRole("button", { name: /dar de baja/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^reactivar$/i })).not.toBeInTheDocument();
     expect((await getEmpleado("e3")).estado).toBe("activo");
+  });
+
+  it("registra una licencia vigente y sincroniza el Estado a licencia", async () => {
+    const user = userEvent.setup();
+    renderFicha("e2");
+    await screen.findByRole("heading", { name: "Laura Pérez" });
+    expect(screen.getByText("Sin licencias registradas.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /registrar licencia/i }));
+    const hoy = new Date();
+    hoy.setHours(12, 0, 0, 0);
+    const enCinco = new Date(hoy.getTime() + 5 * 24 * 60 * 60 * 1000);
+    const valor = (d: Date) => d.toISOString().slice(0, 10);
+    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: valor(hoy) } });
+    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: valor(enCinco) } });
+    await user.type(screen.getByLabelText(/^motivo/i), "Estudio");
+    await user.click(screen.getByRole("button", { name: /guardar licencia/i }));
+
+    expect(await screen.findByText(/–/)).toBeInTheDocument();
+    expect(screen.getByText("Estudio")).toBeInTheDocument();
+    expect(screen.getByText("Vigente")).toBeInTheDocument();
+    expect(screen.queryByText("Sin licencias registradas.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /guardar licencia/i })).not.toBeInTheDocument();
+
+    expect(screen.getByText("licencia")).toBeInTheDocument();
+    expect((await getEmpleado("e2")).estado).toBe("licencia");
+  });
+
+  it("muestra el histórico con la licencia vigente destacada", async () => {
+    renderFicha("e5");
+    await screen.findByRole("heading", { name: "Carlos López" });
+
+    expect(screen.getByText("licencia")).toBeInTheDocument();
+    expect(screen.getByText("Licencia médica")).toBeInTheDocument();
+    expect(screen.getByText("Vigente")).toBeInTheDocument();
+    expect(screen.queryByText("Sin licencias registradas.")).not.toBeInTheDocument();
+  });
+
+  it("rechaza una licencia que se solapa con la vigente", async () => {
+    const user = userEvent.setup();
+    renderFicha("e5");
+    await screen.findByRole("heading", { name: "Carlos López" });
+
+    await user.click(screen.getByRole("button", { name: /registrar licencia/i }));
+    const hoy = new Date();
+    hoy.setHours(12, 0, 0, 0);
+    const enTres = new Date(hoy.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const valor = (d: Date) => d.toISOString().slice(0, 10);
+    fireEvent.change(screen.getByLabelText(/^desde/i), { target: { value: valor(hoy) } });
+    fireEvent.change(screen.getByLabelText(/^hasta/i), { target: { value: valor(enTres) } });
+    await user.click(screen.getByRole("button", { name: /guardar licencia/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/solapa/i);
+    expect(screen.getByRole("button", { name: /guardar licencia/i })).toBeInTheDocument();
   });
 });

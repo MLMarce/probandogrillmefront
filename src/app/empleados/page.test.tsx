@@ -46,6 +46,14 @@ describe("EmpleadosPage", () => {
     expect(screen.queryByText("Lucas Gómez")).not.toBeInTheDocument();
   });
 
+  it("muestra el estado licencia como badge", async () => {
+    render(<EmpleadosPage />);
+    expect(await screen.findByText("Lucas Gómez")).toBeInTheDocument();
+    expect(screen.getByText("licencia")).toBeInTheDocument();
+    expect(screen.getAllByText("activo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("inactivo").length).toBeGreaterThan(0);
+  });
+
   it("pagina el listado", async () => {
     const user = userEvent.setup();
     render(<EmpleadosPage />);

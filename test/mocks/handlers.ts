@@ -71,17 +71,51 @@ function seedEmpleados(): FakeEmpleado[] {
   return empleados;
 }
 
-let licenciasStore: { empleadoId: string; desde: string; hasta: string }[] = [];
+interface FakeLicencia {
+  id: string;
+  empleadoId: string;
+  desde: string;
+  hasta: string;
+  motivo: string | null;
+}
+
+function seedLicencias(): FakeLicencia[] {
+  return [
+    {
+      id: "lic1",
+      empleadoId: "e5",
+      desde: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      hasta: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      motivo: "Licencia médica",
+    },
+  ];
+}
+
+let licenciasStore: FakeLicencia[] = seedLicencias();
 
 export function resetAreas(): void {
   areasStore = seedAreas();
   empleadosStore = seedEmpleados();
-  licenciasStore = [];
+  licenciasStore = seedLicencias();
   nextEmpleadoId = 13;
 }
 
 let nextId = 3;
 let nextEmpleadoId = 13;
+let nextLicenciaId = 2;
+
+function esVigente(l: { desde: string; hasta: string }): boolean {
+  const ahora = Date.now();
+  return new Date(l.desde).getTime() <= ahora && new Date(l.hasta).getTime() >= ahora;
+}
+
+function sincronizarEstadoPorLicencia(empleadoId: string): void {
+  const empleado = empleadosStore.find((e) => e.id === empleadoId);
+  if (!empleado) return;
+  const vigente = licenciasStore.some((l) => l.empleadoId === empleadoId && esVigente(l));
+  if (vigente && empleado.estado === "activo") empleado.estado = "licencia";
+  else if (!vigente && empleado.estado === "licencia") empleado.estado = "activo";
+}
 
 export const handlers = [
   http.get(`${API_URL}/health`, () => {
@@ -238,6 +272,7 @@ export const handlers = [
       }
     }
     Object.assign(empleado, body);
+    sincronizarEstadoPorLicencia(empleado.id);
     return HttpResponse.json(detalleDe(empleado));
   }),
   http.post(`${API_URL}/empleados/:id/baja`, ({ params }) => {
@@ -266,16 +301,61 @@ export const handlers = [
     empleado.estado = "activo";
     return HttpResponse.json(detalleDe(empleado));
   }),
+  http.get(`${API_URL}/licencias`, ({ request }) => {
+    const empleadoId = new URL(request.url).searchParams.get("empleadoId");
+    if (!empleadoId) {
+      return HttpResponse.json({ message: "empleadoId es obligatorio" }, { status: 400 });
+    }
+    const items = licenciasStore
+      .filter((l) => l.empleadoId === empleadoId)
+      .sort((a, b) => b.desde.localeCompare(a.desde))
+      .map((l) => ({ ...l, vigente: esVigente(l) }));
+    return HttpResponse.json(items);
+  }),
+  http.post(`${API_URL}/licencias`, async ({ request }) => {
+    const body = (await request.json()) as {
+      empleadoId: string;
+      desde: string;
+      hasta: string;
+      motivo?: string;
+    };
+    const empleado = empleadosStore.find((e) => e.id === body.empleadoId);
+    if (!empleado) {
+      return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
+    }
+    if (new Date(body.desde).getTime() > new Date(body.hasta).getTime()) {
+      return HttpResponse.json(
+        { message: "La fecha desde debe ser anterior o igual a la fecha hasta" },
+        { status: 422 },
+      );
+    }
+    const solape = licenciasStore.some(
+      (l) =>
+        l.empleadoId === body.empleadoId &&
+        new Date(l.desde).getTime() <= new Date(body.hasta).getTime() &&
+        new Date(l.hasta).getTime() >= new Date(body.desde).getTime(),
+    );
+    if (solape) {
+      return HttpResponse.json(
+        { message: "El Empleado ya tiene una licencia que se solapa con ese período" },
+        { status: 409 },
+      );
+    }
+    const licencia: FakeLicencia = {
+      id: `lic${nextLicenciaId++}`,
+      empleadoId: body.empleadoId,
+      desde: new Date(body.desde).toISOString(),
+      hasta: new Date(body.hasta).toISOString(),
+      motivo: body.motivo?.trim() || null,
+    };
+    licenciasStore.push(licencia);
+    sincronizarEstadoPorLicencia(licencia.empleadoId);
+    return HttpResponse.json({ ...licencia, vigente: esVigente(licencia) }, { status: 201 });
+  }),
 ];
 
 function licenciaVigente(empleadoId: string) {
-  const ahora = Date.now();
-  const hay = licenciasStore.some(
-    (l) =>
-      l.empleadoId === empleadoId &&
-      new Date(l.desde).getTime() <= ahora &&
-      new Date(l.hasta).getTime() >= ahora,
-  );
+  const hay = licenciasStore.some((l) => l.empleadoId === empleadoId && esVigente(l));
   if (!hay) return null;
   return HttpResponse.json(
     { message: "El Empleado tiene una licencia vigente: la operación queda bloqueada" },

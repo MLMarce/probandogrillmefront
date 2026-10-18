@@ -11,6 +11,7 @@ import {
   listEmpleados,
 } from "@/api/client";
 import { AuthGuard } from "@/components/auth-guard";
+import { EstadoBadge } from "@/components/estado-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export default function EmpleadosPage() {
@@ -142,7 +143,9 @@ function EmpleadosContent() {
               </td>
               <td className="px-3 py-2">{empleado.areaNombre ?? "—"}</td>
               <td className="px-3 py-2">{empleado.puesto ?? "—"}</td>
-              <td className="px-3 py-2">{empleado.estado}</td>
+              <td className="px-3 py-2">
+                <EstadoBadge estado={empleado.estado} />
+              </td>
               <td className="px-3 py-2">
                 <Link
                   href={`/empleados/${empleado.id}`}
