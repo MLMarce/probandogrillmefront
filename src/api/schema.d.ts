@@ -239,30 +239,30 @@ export interface components {
             nombre: string;
             apellido: string;
             dni: string;
-            fechaNacimiento?: string;
+            fechaNacimiento?: string | null;
             email?: string;
             telefono?: string;
             direccion?: string;
             /** @example Mantenimiento de electricidad */
             puesto?: string;
-            fechaIngreso?: string;
+            fechaIngreso?: string | null;
             areaId?: string;
             /** @description Id de un Empleado activo */
             supervisorId?: string;
         };
         UpdateEmpleadoDto: {
-            /** @description Si no se provee, se autgenera secuencialmente */
+            /** @description Legajo nuevo (debe ser único) */
             legajo?: string;
             nombre?: string;
             apellido?: string;
             dni?: string;
-            fechaNacimiento?: string;
+            fechaNacimiento?: string | null;
             email?: string;
             telefono?: string;
             direccion?: string;
             /** @example Mantenimiento de electricidad */
             puesto?: string;
-            fechaIngreso?: string;
+            fechaIngreso?: string | null;
             areaId?: string;
             /** @description Id de un Empleado activo */
             supervisorId?: string;
@@ -495,7 +495,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Bearer <token> del admin */
+                /** @description Bearer <token> del Administrador de RRHH */
                 authorization?: string;
             };
             path?: never;
@@ -542,7 +542,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Bearer <token> del admin */
+                /** @description Bearer <token> del Administrador de RRHH */
                 authorization?: string;
             };
             path: {

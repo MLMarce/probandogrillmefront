@@ -140,6 +140,19 @@ export async function listEmpleados(query: EmpleadosQuery = {}): Promise<Paginat
   return (await res.json()) as PaginatedEmpleados;
 }
 
+export async function listEmpleadosActivos(): Promise<EmpleadoListItem[]> {
+  const items: EmpleadoListItem[] = [];
+  let page = 1;
+  let total = 0;
+  do {
+    const res = await listEmpleados({ estado: "activo", page, pageSize: 100 });
+    items.push(...res.items);
+    total = res.total;
+    page += 1;
+  } while (items.length < total);
+  return items;
+}
+
 export type CreateEmpleadoPayload =
   paths["/empleados"]["post"]["requestBody"]["content"]["application/json"];
 export type EmpleadoDetalle =
@@ -167,8 +180,8 @@ export async function updateEmpleado(
   id: string,
   payload: UpdateEmpleadoPayload,
 ): Promise<EmpleadoDetalle> {
-  const clean: Record<string, unknown> = { ...payload };
-  for (const key of Object.keys(clean)) {
+  const clean: UpdateEmpleadoPayload = { ...payload };
+  for (const key of Object.keys(clean) as (keyof UpdateEmpleadoPayload)[]) {
     if (clean[key] === undefined) delete clean[key];
   }
   const res = await apiFetch(

@@ -7,10 +7,10 @@ import {
   ApiError,
   AreaResponse,
   EmpleadoDetalle,
-  PaginatedEmpleados,
+  EmpleadoListItem,
   getEmpleado,
   listAreas,
-  listEmpleados,
+  listEmpleadosActivos,
   updateEmpleado,
 } from "@/api/client";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export function FichaEmpleado({ id }: { id: string }) {
   const router = useRouter();
   const [empleado, setEmpleado] = useState<EmpleadoDetalle | null>(null);
   const [areas, setAreas] = useState<AreaResponse[]>([]);
-  const [candidatos, setCandidatos] = useState<PaginatedEmpleados | null>(null);
+  const [activos, setActivos] = useState<EmpleadoListItem[]>([]);
   const [form, setForm] = useState<FormState | null>(null);
   const [editando, setEditando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,13 +60,13 @@ export function FichaEmpleado({ id }: { id: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getEmpleado(id), listAreas(), listEmpleados({ estado: "activo", pageSize: 100 })])
-      .then(([data, areasData, activos]) => {
+    Promise.all([getEmpleado(id), listAreas(), listEmpleadosActivos()])
+      .then(([data, areasData, activosData]) => {
         if (cancelled) return;
         setEmpleado(data);
         setForm(toForm(data));
         setAreas(areasData);
-        setCandidatos(activos);
+        setActivos(activosData);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -272,7 +272,13 @@ export function FichaEmpleado({ id }: { id: string }) {
                 className={inputCls}
               >
                 <option value="">Sin supervisor</option>
-                {candidatos?.items
+                {form.supervisorId &&
+                  !activos.some((c) => c.id === form.supervisorId) && (
+                    <option value={form.supervisorId}>
+                      {empleado.supervisorNombre ?? form.supervisorId} (no activo)
+                    </option>
+                  )}
+                {activos
                   .filter((c) => c.id !== empleado.id)
                   .map((c) => (
                     <option key={c.id} value={c.id}>
