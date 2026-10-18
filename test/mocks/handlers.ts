@@ -147,6 +147,7 @@ interface FilaImportacion {
 
 const COLUMNAS_REQUERIDAS = ["nombre", "apellido", "dni"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ISO8601_RE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
 
 function validarImportacion(csv: string): { filas: FilaImportacion[] } | { error: string } {
   const lineas = csv
@@ -202,10 +203,10 @@ function validarImportacion(csv: string): { filas: FilaImportacion[] } | { error
     if (base.email && !EMAIL_RE.test(base.email)) {
       return { ...base, estado: "error", motivo: "Email inválido" };
     }
-    if (base.fechaNacimiento && Number.isNaN(Date.parse(base.fechaNacimiento))) {
+    if (base.fechaNacimiento && !ISO8601_RE.test(base.fechaNacimiento)) {
       return { ...base, estado: "error", motivo: "Fecha de nacimiento inválida" };
     }
-    if (base.fechaIngreso && Number.isNaN(Date.parse(base.fechaIngreso))) {
+    if (base.fechaIngreso && !ISO8601_RE.test(base.fechaIngreso)) {
       return { ...base, estado: "error", motivo: "Fecha de ingreso inválida" };
     }
     if (base.area) {

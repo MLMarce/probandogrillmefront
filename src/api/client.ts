@@ -233,22 +233,16 @@ export type PreviewImportacion =
 export type ConfirmacionImportacion =
   paths["/importaciones/confirm"]["post"]["responses"]["200"]["content"]["application/json"];
 
-export async function previewImportacion(csv: string): Promise<PreviewImportacion> {
-  const res = await apiFetch(
-    "/importaciones/preview",
-    { method: "POST", body: JSON.stringify({ csv }) },
-    true,
-  );
+async function postImportacion<T>(path: string, csv: string): Promise<T> {
+  const res = await apiFetch(path, { method: "POST", body: JSON.stringify({ csv }) }, true);
   if (!res.ok) throw await readError(res);
-  return (await res.json()) as PreviewImportacion;
+  return (await res.json()) as T;
 }
 
-export async function confirmarImportacion(csv: string): Promise<ConfirmacionImportacion> {
-  const res = await apiFetch(
-    "/importaciones/confirm",
-    { method: "POST", body: JSON.stringify({ csv }) },
-    true,
-  );
-  if (!res.ok) throw await readError(res);
-  return (await res.json()) as ConfirmacionImportacion;
+export function previewImportacion(csv: string): Promise<PreviewImportacion> {
+  return postImportacion<PreviewImportacion>("/importaciones/preview", csv);
+}
+
+export function confirmarImportacion(csv: string): Promise<ConfirmacionImportacion> {
+  return postImportacion<ConfirmacionImportacion>("/importaciones/confirm", csv);
 }

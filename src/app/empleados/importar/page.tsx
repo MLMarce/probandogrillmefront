@@ -23,19 +23,43 @@ const PLANTILLA_URL = `data:text/csv;charset=utf-8,${encodeURIComponent(PLANTILL
 
 type Fase = "carga" | "preview" | "resumen";
 
-const CLASES_ESTADO: Record<string, string> = {
+type EstadoFilaImportacion = "valida" | "error" | "omitida" | "creada";
+
+const CLASES_ESTADO: Record<EstadoFilaImportacion, string> = {
   valida: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   creada: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   omitida: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 };
 
-function EstadoFila({ estado }: { estado: string }) {
+function EstadoFila({ estado }: { estado: EstadoFilaImportacion }) {
   return (
     <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${CLASES_ESTADO[estado] ?? ""}`}
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${CLASES_ESTADO[estado]}`}
     >
       {estado}
+    </span>
+  );
+}
+
+const TONOS_CONTADOR = {
+  verde: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  rojo: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  gris: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+} as const;
+
+function Contador({
+  n,
+  label,
+  tono,
+}: {
+  n: number;
+  label: string;
+  tono: keyof typeof TONOS_CONTADOR;
+}) {
+  return (
+    <span className={`rounded-full px-3 py-1 text-sm font-medium ${TONOS_CONTADOR[tono]}`}>
+      {n} {label}
     </span>
   );
 }
@@ -145,18 +169,10 @@ function ImportarContent() {
       {fase === "preview" && preview && (
         <section className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3 rounded border bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <span className="text-sm font-medium">
-              {preview.resumen.total} filas ·{" "}
-            </span>
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-              {preview.resumen.validas} válidas
-            </span>
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
-              {preview.resumen.errores} errores
-            </span>
-            <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              {preview.resumen.omitidas} omitidas
-            </span>
+            <span className="text-sm font-medium">{preview.resumen.total} filas</span>
+            <Contador n={preview.resumen.validas} label="válidas" tono="verde" />
+            <Contador n={preview.resumen.errores} label="errores" tono="rojo" />
+            <Contador n={preview.resumen.omitidas} label="omitidas" tono="gris" />
           </div>
 
           <div className="overflow-x-auto rounded border bg-white dark:border-zinc-800 dark:bg-zinc-950">
@@ -216,15 +232,9 @@ function ImportarContent() {
             Importación finalizada
           </h2>
           <div className="flex flex-wrap gap-3">
-            <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-              {resumen.creados} creados
-            </span>
-            <span className="rounded-full bg-zinc-200 px-3 py-1 text-sm font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              {resumen.omitidos} omitidos
-            </span>
-            <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
-              {resumen.errores} errores
-            </span>
+            <Contador n={resumen.creados} label="creados" tono="verde" />
+            <Contador n={resumen.omitidos} label="omitidos" tono="gris" />
+            <Contador n={resumen.errores} label="errores" tono="rojo" />
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
               de {resumen.totalFilas} filas
             </span>
