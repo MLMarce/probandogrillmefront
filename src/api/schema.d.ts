@@ -130,6 +130,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/empleados/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha completa por id o legajo */
+        get: operations["EmpleadosController_findById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edita campos; registra en auditoría los cambios */
+        patch: operations["EmpleadosController_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -196,12 +214,48 @@ export interface components {
             page: number;
             pageSize: number;
         };
+        EmpleadoDetalle: {
+            id: string;
+            legajo: string;
+            nombre: string;
+            apellido: string;
+            dni: string;
+            fechaNacimiento: string | null;
+            email: string | null;
+            telefono: string | null;
+            direccion: string | null;
+            puesto: string | null;
+            fechaIngreso: string | null;
+            /** @enum {string} */
+            estado: "activo" | "inactivo" | "licencia";
+            areaId: string | null;
+            areaNombre: string | null;
+            supervisorId: string | null;
+            supervisorNombre: string | null;
+        };
         CreateEmpleadoDto: {
             /** @description Si no se provee, se autgenera secuencialmente */
             legajo?: string;
             nombre: string;
             apellido: string;
             dni: string;
+            fechaNacimiento?: string;
+            email?: string;
+            telefono?: string;
+            direccion?: string;
+            /** @example Mantenimiento de electricidad */
+            puesto?: string;
+            fechaIngreso?: string;
+            areaId?: string;
+            /** @description Id de un Empleado activo */
+            supervisorId?: string;
+        };
+        UpdateEmpleadoDto: {
+            /** @description Si no se provee, se autgenera secuencialmente */
+            legajo?: string;
+            nombre?: string;
+            apellido?: string;
+            dni?: string;
             fechaNacimiento?: string;
             email?: string;
             telefono?: string;
@@ -459,6 +513,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmpleadoListItem"];
+                };
+            };
+        };
+    };
+    EmpleadosController_findById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpleadoDetalle"];
+                };
+            };
+        };
+    };
+    EmpleadosController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer <token> del admin */
+                authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEmpleadoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpleadoDetalle"];
                 };
             };
         };

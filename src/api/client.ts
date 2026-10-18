@@ -142,6 +142,10 @@ export async function listEmpleados(query: EmpleadosQuery = {}): Promise<Paginat
 
 export type CreateEmpleadoPayload =
   paths["/empleados"]["post"]["requestBody"]["content"]["application/json"];
+export type EmpleadoDetalle =
+  paths["/empleados/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type UpdateEmpleadoPayload =
+  paths["/empleados/{id}"]["patch"]["requestBody"]["content"]["application/json"];
 
 export async function createEmpleado(payload: CreateEmpleadoPayload): Promise<EmpleadoListItem> {
   const clean: CreateEmpleadoPayload = { ...payload };
@@ -151,4 +155,27 @@ export async function createEmpleado(payload: CreateEmpleadoPayload): Promise<Em
   const res = await apiFetch("/empleados", { method: "POST", body: JSON.stringify(clean) }, true);
   if (!res.ok) throw await readError(res);
   return (await res.json()) as EmpleadoListItem;
+}
+
+export async function getEmpleado(id: string): Promise<EmpleadoDetalle> {
+  const res = await apiFetch(`/empleados/${encodeURIComponent(id)}`);
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as EmpleadoDetalle;
+}
+
+export async function updateEmpleado(
+  id: string,
+  payload: UpdateEmpleadoPayload,
+): Promise<EmpleadoDetalle> {
+  const clean: Record<string, unknown> = { ...payload };
+  for (const key of Object.keys(clean)) {
+    if (clean[key] === undefined) delete clean[key];
+  }
+  const res = await apiFetch(
+    `/empleados/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(clean) },
+    true,
+  );
+  if (!res.ok) throw await readError(res);
+  return (await res.json()) as EmpleadoDetalle;
 }

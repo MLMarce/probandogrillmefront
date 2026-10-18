@@ -130,6 +130,7 @@ function EmpleadosContent() {
             <th className="px-3 py-2">Área</th>
             <th className="px-3 py-2">Puesto</th>
             <th className="px-3 py-2">Estado</th>
+            <th className="px-3 py-2">Ficha</th>
           </tr>
         </thead>
         <tbody>
@@ -142,11 +143,19 @@ function EmpleadosContent() {
               <td className="px-3 py-2">{empleado.areaNombre ?? "—"}</td>
               <td className="px-3 py-2">{empleado.puesto ?? "—"}</td>
               <td className="px-3 py-2">{empleado.estado}</td>
+              <td className="px-3 py-2">
+                <Link
+                  href={`/empleados/${empleado.id}`}
+                  className={`${buttonVariants({ variant: "outline", size: "sm" })} no-underline`}
+                >
+                  Ver ficha
+                </Link>
+              </td>
             </tr>
           ))}
           {data?.items.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-3 py-4 text-center text-sm text-zinc-500">
+              <td colSpan={6} className="px-3 py-4 text-center text-sm text-zinc-500">
                 No hay Empleados que coincidan.
               </td>
             </tr>

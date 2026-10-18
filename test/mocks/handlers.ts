@@ -30,9 +30,15 @@ interface FakeEmpleado {
   nombre: string;
   apellido: string;
   dni?: string;
+  email?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  fechaNacimiento?: string | null;
+  fechaIngreso?: string | null;
   puesto: string | null;
   estado: string;
   areaId: string | null;
+  supervisorId?: string | null;
 }
 
 let empleadosStore: FakeEmpleado[] = seedEmpleados();
@@ -198,7 +204,56 @@ export const handlers = [
       { status: 201 },
     );
   }),
+  http.get(`${API_URL}/empleados/:id`, ({ params }) => {
+    const empleado = empleadosStore.find((e) => e.id === params.id || e.legajo === params.id);
+    if (!empleado) {
+      return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
+    }
+    return HttpResponse.json(detalleDe(empleado));
+  }),
+  http.patch(`${API_URL}/empleados/:id`, async ({ params, request }) => {
+    const empleado = empleadosStore.find((e) => e.id === params.id || e.legajo === params.id);
+    if (!empleado) {
+      return HttpResponse.json({ message: "Empleado no encontrado" }, { status: 404 });
+    }
+    const body = (await request.json()) as Partial<FakeEmpleado>;
+    if (body.legajo && empleadosStore.some((e) => e.legajo === body.legajo && e.id !== empleado.id)) {
+      return HttpResponse.json({ message: "Ya existe un Empleado con ese legajo" }, { status: 409 });
+    }
+    if (body.dni && empleadosStore.some((e) => e.dni === body.dni && e.id !== empleado.id)) {
+      return HttpResponse.json({ message: "Ya existe un Empleado con ese DNI" }, { status: 409 });
+    }
+    if (body.supervisorId) {
+      const supervisor = empleadosStore.find(
+        (e) => e.id === body.supervisorId && e.estado === "activo",
+      );
+      if (!supervisor) {
+        return HttpResponse.json(
+          { message: "El supervisor debe ser un Empleado activo" },
+          { status: 422 },
+        );
+      }
+    }
+    Object.assign(empleado, body);
+    return HttpResponse.json(detalleDe(empleado));
+  }),
 ];
+
+function detalleDe(empleado: FakeEmpleado) {
+  const area = areasStore.find((a) => a.id === empleado.areaId);
+  const supervisor = empleadosStore.find((e) => e.id === empleado.supervisorId);
+  return {
+    ...empleado,
+    email: empleado.email ?? null,
+    telefono: empleado.telefono ?? null,
+    direccion: empleado.direccion ?? null,
+    fechaNacimiento: empleado.fechaNacimiento ?? null,
+    fechaIngreso: empleado.fechaIngreso ?? null,
+    supervisorId: empleado.supervisorId ?? null,
+    areaNombre: area?.nombre ?? null,
+    supervisorNombre: supervisor ? `${supervisor.nombre} ${supervisor.apellido}` : null,
+  };
+}
 
 function nextLegajo(): string {
   let n = empleadosStore.length + 1;
